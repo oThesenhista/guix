@@ -8,7 +8,7 @@
 </head>
 <body>
     <div id="left-sidebar">
-        <div id="layers-panel">
+        <div id="layers-panel" style="display:flex; flex-direction:column; height:100%;">
             <div class="panel-header">Layers</div>
             <div id="layers-list"></div>
         </div>
@@ -19,6 +19,9 @@
             <div class="menu-dropdown">
                 <span class="menu-title">Archive</span>
                 <div class="dropdown-content">
+                    <div id="btn-open-project">Open Project (.viep)</div>
+                    <div id="btn-save-project">Save Project (.viep)</div>
+                    <hr style="border: 0; border-top: 1px solid #333; margin: 4px 0;">
                     <div id="btn-export-svg">Export SVG</div>
                     <div id="btn-export-png">Export PNG</div>
                     <div id="btn-export-jpg">Export JPG</div>
@@ -36,10 +39,11 @@
                 <rect width="100%" height="100%" fill="#1a1a1a" id="bg-canvas" />
                 <rect width="100%" height="100%" fill="url(#grid)" id="bg-grid" />
                 <g id="layer-objects"></g>
+                <line id="axis-guide" stroke="#ff3366" stroke-width="1.5" stroke-dasharray="6" style="display:none; pointer-events:none;" />
             </svg>
 
             <div id="canvas-hud-left">
-                <input type="checkbox" id="toggle-snap" checked title="Toggle Snap">
+                <img src="assets/img/magnet.svg" id="toggle-snap-icon" title="Toggle Snap">
                 <input type="number" id="snap-value" value="16" min="1" max="128">
                 <span>px</span>
             </div>
@@ -52,11 +56,16 @@
                 <div id="shortcuts-list" style="display: none;">
                     <div><b>Space / Mid Click</b> Pan</div>
                     <div><b>Scroll</b> Zoom Canvas</div>
+                    <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.1); margin: 6px 0;">
                     <div><b>Ctrl + Click</b> Select Layer</div>
+                    <div><b>Shift + Drag</b> Axis Lock</div>
+                    <div><b>Ctrl + Alt + Drag</b> Duplicate</div>
+                    <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.1); margin: 6px 0;">
                     <div><b>Ctrl + Scroll</b> Scale Object</div>
                     <div><b>Alt + Scroll</b> Rotate Object</div>
                     <div><b>Shift + Scroll</b> Opacity</div>
                     <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.1); margin: 6px 0;">
+                    <div><b>Ctrl + Z</b> Undo</div>
                     <div><b>Ctrl + G</b> Group</div>
                     <div><b>Ctrl + D</b> Duplicate</div>
                     <div><b>Delete</b> Remove</div>
@@ -64,108 +73,246 @@
             </div>
         </div>
         
-        <div id="panel-resizer"></div>
+        <div id="panel-resizer">
+            <div id="shapes-collapse-btn" title="Toggle Shapes Panel">
+                <img src="assets/img/full_arrow.svg" alt="Toggle">
+            </div>
+        </div>
+
         <div id="shapes-panel">
             <div id="shapes-header">
                 <div id="tools-left">
-                    <button class="bool-btn" id="btn-add-text" title="Add Text"><img src="img/text.svg" alt="Text"></button>
+                    <button class="bool-btn" id="btn-add-text" title="Add Text"><img src="assets/img/text.svg" alt="Text"></button>
                     <label class="bool-btn" title="Add Image Node" style="margin:0; cursor:pointer;">
                         <input type="file" id="btn-add-image" accept="image/*" style="display: none;">
-                        <img src="img/image.svg" alt="Image">
+                        <img src="assets/img/image.svg" alt="Image">
                     </label>
                 </div>
                 <div id="boolean-tools">
-                    <button class="bool-btn active" data-bool="union" title="Union"><img src="img/union.svg" alt="Union"></button>
-                    <button class="bool-btn" data-bool="subtract" title="Subtract"><img src="img/subtract.svg" alt="Subtract"></button>
-                    <button class="bool-btn" data-bool="intersect" title="Intersect"><img src="img/intersect.svg" alt="Intersect"></button>
-                    <button class="bool-btn" data-bool="exclude" title="Exclude"><img src="img/exclude.svg" alt="Exclude"></button>
-                    <button class="bool-btn" data-bool="flatten" title="Flatten"><img src="img/flatten.svg" alt="Flatten"></button>
+                    <button class="bool-btn active" data-bool="union" title="Union"><img src="assets/img/union.svg" alt="Union"></button>
+                    <button class="bool-btn" data-bool="subtract" title="Subtract"><img src="assets/img/subtract.svg" alt="Subtract"></button>
+                    <button class="bool-btn" data-bool="intersect" title="Intersect"><img src="assets/img/intersect.svg" alt="Intersect"></button>
+                    <button class="bool-btn" data-bool="exclude" title="Exclude"><img src="assets/img/exclude.svg" alt="Exclude"></button>
+                    <button class="bool-btn" data-bool="flatten" title="Flatten"><img src="assets/img/flatten.svg" alt="Flatten"></button>
                 </div>
             </div>
+            
             <div id="shapes-dock"></div>
+            
+            <div id="shapes-tabs">
+                <div class="asset-tab active" data-tab="shapes">Shapes</div>
+                <div class="asset-tab" data-tab="gradients">Gradients</div>
+                <div class="asset-tab" data-tab="textures">Textures</div>
+                <div class="asset-tab" data-tab="buttons">Buttons</div>
+                <div class="asset-tab" data-tab="icons">Icons</div>
+            </div>
         </div>
     </div>
 
     <div id="properties">
-        <div class="panel-section">
-            <label>Canvas</label>
-            <div class="prop-row">
-                <div class="prop-input-group">
-                    <span class="scrub-label" id="lbl-canvas-w" title="Drag to resize">W</span>
-                    <input type="number" id="inp-canvas-w" value="512">
-                </div>
-                <div class="prop-input-group">
-                    <span class="scrub-label" id="lbl-canvas-h" title="Drag to resize">H</span>
-                    <input type="number" id="inp-canvas-h" value="512">
+        <div class="panel-header">Properties</div>
+        <div class="properties-content">
+            <div class="panel-section">
+                <label>Canvas</label>
+                <div class="prop-row">
+                    <div class="prop-input-group">
+                        <span class="scrub-label" id="lbl-canvas-w" title="Drag to resize"><img src="assets/img/width.svg" alt="W"></span>
+                        <input type="number" id="inp-canvas-w" value="512">
+                    </div>
+                    <div class="prop-input-group">
+                        <span class="scrub-label" id="lbl-canvas-h" title="Drag to resize"><img src="assets/img/height.svg" alt="H"></span>
+                        <input type="number" id="inp-canvas-h" value="512">
+                    </div>
+                    <div class="prop-spacer"></div>
                 </div>
             </div>
-        </div>
 
-        <div class="panel-section" id="obj-props-section" style="opacity: 0.3; pointer-events: none;">
-            <label>Transform</label>
-            <div class="prop-row">
-                <div class="prop-input-group">
-                    <span class="scrub-label" id="lbl-obj-x" title="Drag to move X">X</span>
-                    <input type="number" id="inp-obj-x" value="0">
+            <div class="panel-section" id="obj-props-section" style="opacity: 0.3; pointer-events: none;">
+                <label>Transform</label>
+                <div class="prop-row">
+                    <div class="prop-input-group">
+                        <span class="scrub-label" id="lbl-obj-x" title="Drag to move X"><img src="assets/img/x.svg" alt="X"></span>
+                        <input type="number" id="inp-obj-x" value="0">
+                    </div>
+                    <div class="prop-input-group">
+                        <span class="scrub-label" id="lbl-obj-y" title="Drag to move Y"><img src="assets/img/y.svg" alt="Y"></span>
+                        <input type="number" id="inp-obj-y" value="0">
+                    </div>
+                    <div class="prop-spacer"></div>
                 </div>
-                <div class="prop-input-group">
-                    <span class="scrub-label" id="lbl-obj-y" title="Drag to move Y">Y</span>
-                    <input type="number" id="inp-obj-y" value="0">
+                <div class="prop-row" style="position: relative;">
+                    <div class="prop-input-group">
+                        <span class="scrub-label" id="lbl-obj-w" title="Drag to scale Width"><img src="assets/img/width.svg" alt="W"></span>
+                        <input type="number" id="inp-obj-w" value="0" min="1">
+                    </div>
+                    <div class="prop-input-group">
+                        <span class="scrub-label" id="lbl-obj-h" title="Drag to scale Height"><img src="assets/img/height.svg" alt="H"></span>
+                        <input type="number" id="inp-obj-h" value="0" min="1">
+                    </div>
+                    <button id="btn-lock-ratio" class="active" title="Constrain Proportions">
+                        <img src="assets/img/lock_size.svg" alt="Lock">
+                    </button>
+                </div>
+                <div class="prop-row">
+                    <div class="prop-input-group">
+                        <span class="scrub-label" id="lbl-obj-skew-x" title="Drag to skew X"><img src="assets/img/h_skew.svg" alt="SKX"></span>
+                        <input type="number" id="inp-obj-skew-x" value="0">
+                    </div>
+                    <div class="prop-input-group">
+                        <span class="scrub-label" id="lbl-obj-skew-y" title="Drag to skew Y"><img src="assets/img/v_skew.svg" alt="SKY"></span>
+                        <input type="number" id="inp-obj-skew-y" value="0">
+                    </div>
+                    <div class="prop-spacer"></div>
                 </div>
             </div>
-            <div class="prop-row" style="position: relative;">
-                <div class="prop-input-group">
-                    <span class="scrub-label" id="lbl-obj-w" title="Drag to scale Width">W</span>
-                    <input type="number" id="inp-obj-w" value="0" min="1">
-                </div>
-                <div class="prop-input-group">
-                    <span class="scrub-label" id="lbl-obj-h" title="Drag to scale Height">H</span>
-                    <input type="number" id="inp-obj-h" value="0" min="1">
-                </div>
-                <button id="btn-lock-ratio" class="active" title="Constrain Proportions">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
-                </button>
-            </div>
-        </div>
-
-        <div class="panel-section" id="text-props-section" style="display: none;">
-            <label>Text Content</label>
-            <textarea id="inp-text-content" rows="2" placeholder="Type here..."></textarea>
             
-            <label style="margin-top: 10px;">Typography</label>
-            <select id="inp-text-font">
-                <option value="sans-serif">System Sans-Serif</option>
-                <option value="'Inter', sans-serif">Inter</option>
-                <option value="'Roboto', sans-serif">Roboto</option>
-                <option value="'Open Sans', sans-serif">Open Sans</option>
-                <option value="'Montserrat', sans-serif">Montserrat</option>
-                <option value="'Lato', sans-serif">Lato</option>
-                <option value="'Poppins', sans-serif">Poppins</option>
-                <option value="'Oswald', sans-serif">Oswald</option>
-                <option value="'Raleway', sans-serif">Raleway</option>
-                <option value="'Ubuntu', sans-serif">Ubuntu</option>
-                <option value="'Playfair Display', serif">Playfair Display</option>
-                <option value="'Merriweather', serif">Merriweather</option>
-                <option value="'Pacifico', cursive">Pacifico</option>
-            </select>
-        </div>
+            <div class="panel-section" id="fx-props-section" style="opacity: 0.3; pointer-events: none;">
+                <label>Effects</label>
+                <div class="prop-row">
+                    <div class="prop-input-group">
+                        <span class="scrub-label" id="lbl-obj-blur" title="Drag to blur"><img src="assets/img/blur.svg" alt="BLUR"></span>
+                        <input type="number" id="inp-obj-blur" value="0" min="0">
+                    </div>
+                    <div style="flex: 1;"></div>
+                    <div class="prop-spacer"></div>
+                </div>
+            </div>
 
-        <div class="panel-section">
-            <label>Fill Color</label>
-            <input type="color" id="fill-color" value="#d9d9d9">
-        </div>
-        <div class="panel-section">
-            <label>Image Fill (Mask)</label>
-            <label class="file-upload-wrapper">
-                <input type="file" id="fill-image" accept="image/*" style="display: none;">
-                <div class="file-upload-btn">Choose Image...</div>
-            </label>
+            <div class="panel-section" id="text-props-section" style="display: none;">
+                <label>Text Content</label>
+                <textarea id="inp-text-content" rows="2" placeholder="Type here..."></textarea>
+                
+                <label style="margin-top: 10px;">Typography</label>
+                <select id="inp-text-font">
+                    <option value="sans-serif">System Sans-Serif</option>
+                    <option value="'Inter', sans-serif">Inter</option>
+                    <option value="'Roboto', sans-serif">Roboto</option>
+                    <option value="'Open Sans', sans-serif">Open Sans</option>
+                    <option value="'Montserrat', sans-serif">Montserrat</option>
+                    <option value="'Lato', sans-serif">Lato</option>
+                    <option value="'Poppins', sans-serif">Poppins</option>
+                    <option value="'Oswald', sans-serif">Oswald</option>
+                    <option value="'Raleway', sans-serif">Raleway</option>
+                    <option value="'Ubuntu', sans-serif">Ubuntu</option>
+                    <option value="'Playfair Display', serif">Playfair Display</option>
+                    <option value="'Merriweather', serif">Merriweather</option>
+                    <option value="'Pacifico', cursive">Pacifico</option>
+                </select>
+            </div>
+
+            <div class="panel-section">
+                <label>Fill & Image</label>
+                <div class="prop-row">
+                    <input type="color" id="fill-color" value="#d9d9d9">
+                    <label class="file-upload-wrapper">
+                        <input type="file" id="fill-image" accept="image/*" style="display: none;">
+                        <div class="file-upload-btn">Insert Image</div>
+                    </label>
+                    <button class="bool-btn" id="btn-toggle-image-vis" title="Toggle Image Visibility" style="width: 26px; height: 28px; margin: 0; padding: 4px; display: none;">
+                        <img src="assets/img/view.svg" alt="View">
+                    </button>
+                    <div class="prop-spacer" id="fill-image-spacer"></div>
+                </div>
+            </div>
+            
+            <div class="panel-section" id="pattern-props-section" style="display: none;">
+                <label>Image Adjustments</label>
+                
+                <div class="prop-row">
+                    <div class="prop-input-group">
+                        <span class="scrub-label" id="lbl-pat-x" title="Drag to move image X"><img src="assets/img/x.svg" alt="X"></span>
+                        <input type="number" id="inp-pat-x" value="0">
+                    </div>
+                    <div class="prop-input-group">
+                        <span class="scrub-label" id="lbl-pat-y" title="Drag to move image Y"><img src="assets/img/y.svg" alt="Y"></span>
+                        <input type="number" id="inp-pat-y" value="0">
+                    </div>
+                    <div class="prop-spacer"></div>
+                </div>
+                
+                <div class="prop-row" style="position: relative;">
+                    <div class="prop-input-group">
+                        <span class="scrub-label" id="lbl-pat-w" title="Drag to scale image Width (%)"><img src="assets/img/width.svg" alt="W"></span>
+                        <input type="number" id="inp-pat-w" value="100">
+                    </div>
+                    <div class="prop-input-group">
+                        <span class="scrub-label" id="lbl-pat-h" title="Drag to scale image Height (%)"><img src="assets/img/height.svg" alt="H"></span>
+                        <input type="number" id="inp-pat-h" value="100">
+                    </div>
+                    <button id="btn-pat-lock-ratio" class="active" title="Constrain Proportions">
+                        <img src="assets/img/lock_size.svg" alt="Lock">
+                    </button>
+                </div>
+
+                <div class="prop-row">
+                    <div class="prop-input-group">
+                        <span class="scrub-label" id="lbl-pat-rotate" title="Drag to rotate image"><img src="assets/img/rotate.svg" alt="R"></span>
+                        <input type="number" id="inp-pat-rotate" value="0">
+                    </div>
+                    <div style="display: flex; gap: 4px; flex: 1; align-items: center;">
+                        <button class="mini-action-btn" id="btn-pat-flip-h" title="Flip Horizontally"><img src="assets/img/h_flip.svg" alt="H"></button>
+                        <button class="mini-action-btn" id="btn-pat-flip-v" title="Flip Vertically"><img src="assets/img/v_flip.svg" alt="V"></button>
+                        <button class="mini-action-btn" id="btn-pat-rot-90" title="Rotate 90°"><img src="assets/img/rotate_90.svg" alt="90"></button>
+                    </div>
+                    <div class="prop-spacer"></div>
+                </div>
+
+                <div class="prop-row">
+                    <div class="prop-input-group" style="flex: 1;">
+                        <span class="scrub-label" id="lbl-pat-opacity" title="Drag to change image Opacity"><img src="assets/img/opacity.svg" alt="OP"></span>
+                        <input type="number" id="inp-pat-opacity" value="100" min="0" max="100">
+                    </div>
+                    <div class="prop-spacer"></div>
+                </div>
+            </div>
+
+            <div class="panel-section" id="img-color-section" style="display: none;">
+                <label>Color Adjustments</label>
+                <div class="prop-row">
+                    <div class="prop-input-group">
+                        <span class="scrub-label text-badge" id="lbl-pat-bri" title="Brightness">BRI</span>
+                        <input type="number" id="inp-pat-bri" value="0">
+                    </div>
+                    <div class="prop-input-group">
+                        <span class="scrub-label text-badge" id="lbl-pat-con" title="Contrast">CON</span>
+                        <input type="number" id="inp-pat-con" value="100">
+                    </div>
+                    <div class="prop-spacer"></div>
+                </div>
+                <div class="prop-row">
+                    <div class="prop-input-group">
+                        <span class="scrub-label text-badge" id="lbl-pat-sat" title="Saturation">SAT</span>
+                        <input type="number" id="inp-pat-sat" value="100">
+                    </div>
+                    <div class="prop-input-group">
+                        <span class="scrub-label text-badge" id="lbl-pat-hue" title="Hue Rotate">HUE</span>
+                        <input type="number" id="inp-pat-hue" value="0">
+                    </div>
+                    <div class="prop-spacer"></div>
+                </div>
+                <div class="prop-row">
+                    <div class="prop-input-group" style="flex: 1;">
+                        <span class="scrub-label text-badge" id="lbl-pat-temp" title="Temperature (Warm/Cool)">TMP</span>
+                        <input type="number" id="inp-pat-temp" value="0">
+                    </div>
+                    <div class="prop-spacer"></div>
+                </div>
+            </div>
+            
         </div>
     </div>
 
-    <script src="shapes.js"></script>
-    <script src="layers.js"></script>
-    <script src="shortcuts.js"></script>
-    <script src="main.js"></script>
+    <input type="file" id="inp-open-project" accept=".viep" style="display:none;">
+
+    <script src="scripts/paper-full.min.js"></script>
+    <script src="scripts/path-math.js"></script>
+    <script src="scripts/state.js"></script>
+    <script src="scripts/properties.js"></script>
+    <script src="scripts/export.js"></script>
+    <script src="scripts/shapes.js"></script>
+    <script src="scripts/layers.js"></script>
+    <script src="scripts/shortcuts.js"></script>
+    <script src="scripts/gizmos.js"></script>
+    <script src="scripts/main.js"></script>
 </body>
 </html>
