@@ -1,10 +1,10 @@
 "use strict";
-// shortcuts.js - Nudge (Setas), Clone Perfeito e Escala Blindada
+// shortcuts.js - Motor de Teclas de Atalho e Rodinha do Mouse Restaurado
 
 document.addEventListener('wheel', (e) => {
     if (window.selectedElementsIds.length === 0) return;
     if (!e.ctrlKey && !e.altKey && !e.shiftKey) return; 
-    e.preventDefault();
+    e.preventDefault(); // Impede scroll indesejado do navegador
 
     let mode = null; let delta = 0;
     if (e.ctrlKey) { mode = 'scale'; delta = e.deltaY < 0 ? 0.1 : -0.1; } 
@@ -133,16 +133,51 @@ document.addEventListener('keydown', (e) => {
     }
 
     if (e.ctrlKey && e.key.toLowerCase() === 'z') { e.preventDefault(); if(window.undo) window.undo(); return; }
+    
     if (e.ctrlKey && e.key.toLowerCase() === 'g') {
-        e.preventDefault(); let tx = 256, ty = 256;
-        if (window.selectedElementsIds.length > 0) { const firstLayer = window.LayerTree.find(l => l.id === window.selectedElementsIds[0]); if (firstLayer) { tx = firstLayer.tx; ty = firstLayer.ty; } }
-        if (window.createGroup) {
-            const gLayer = window.createGroup(window.snap(tx), window.snap(ty));
-            window.LayerTree.push(gLayer);
-            const topLevelIds = window.getTopLevelSelectedIds ? window.getTopLevelSelectedIds() : window.selectedElementsIds;
-            topLevelIds.forEach(id => { const childLayer = window.LayerTree.find(l => l.id === id); if (childLayer && id !== gLayer.id) { childLayer.maskForId = null; childLayer.boolMode = null; childLayer.parentId = gLayer.id; } });
-            window.Render(); window.selectElement(gLayer.id, false); window.saveState();
+        e.preventDefault();
+        if (e.shiftKey) {
+            // DESAGRUPAR/DESMASCARAR LIVRE
+            if (window.selectedElementsIds.length === 0) return;
+            let newlySelected = [];
+            let modified = false;
+
+            window.selectedElementsIds.forEach(id => {
+                const groupIndex = window.LayerTree.findIndex(l => l.id === id);
+                if (groupIndex === -1) return;
+                const groupLayer = window.LayerTree[groupIndex];
+
+                if (groupLayer.type === 'group') {
+                    const children = window.LayerTree.filter(l => l.parentId === id);
+                    children.forEach(child => { child.parentId = groupLayer.parentId; newlySelected.push(child.id); });
+                    window.LayerTree.splice(groupIndex, 1);
+                    modified = true;
+                }
+            });
+
+            if (modified) {
+                window.Render(); window.selectElement(null, false);
+                newlySelected.forEach(id => window.selectElement(id, true)); window.saveState();
+            }
+        } else {
+            // AGRUPAR
+            let tx = 256, ty = 256;
+            if (window.selectedElementsIds.length > 0) { 
+                const firstLayer = window.LayerTree.find(l => l.id === window.selectedElementsIds[0]); 
+                if (firstLayer) { tx = firstLayer.tx; ty = firstLayer.ty; } 
+            }
+            if (window.createGroup) {
+                const gLayer = window.createGroup(window.snap(tx), window.snap(ty));
+                window.LayerTree.push(gLayer);
+                const topLevelIds = window.getTopLevelSelectedIds ? window.getTopLevelSelectedIds() : window.selectedElementsIds;
+                topLevelIds.forEach(id => { 
+                    const childLayer = window.LayerTree.find(l => l.id === id); 
+                    if (childLayer && id !== gLayer.id) { childLayer.maskForId = null; childLayer.boolMode = null; childLayer.parentId = gLayer.id; } 
+                });
+                window.Render(); window.selectElement(gLayer.id, false); window.saveState();
+            }
         }
+        return;
     }
     
     if (e.key === 'Delete' && window.selectedElementsIds.length > 0) {

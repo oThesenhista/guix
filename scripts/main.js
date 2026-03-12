@@ -1,5 +1,5 @@
 "use strict";
-// main.js - Core Engine com Suporte a Booleanas Avançadas (Paper.js) unificado
+// main.js - Correção de Perda de Foco da Barra de Espaço
 
 const canvasContainer = document.getElementById('canvas-container');
 const canvas = document.getElementById('canvas');
@@ -65,8 +65,21 @@ canvasContainer.addEventListener('mousedown', (e) => {
         canvasContainer.style.cursor = 'grabbing'; return;
     }
 });
-document.addEventListener('keydown', (e) => { if(e.code === 'Space' && e.target === document.body) { e.preventDefault(); document.body.classList.add('space-pressed'); canvasContainer.style.cursor = 'grab'; }});
-document.addEventListener('keyup', (e) => { if(e.code === 'Space') { document.body.classList.remove('space-pressed'); canvasContainer.style.cursor = 'default'; }});
+
+// A MÁGICA 1: O Spacebar agora ignora botões e trava o foco na tela pra você dar Pan em paz!
+document.addEventListener('keydown', (e) => { 
+    if(e.code === 'Space' && e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') { 
+        e.preventDefault(); 
+        document.body.classList.add('space-pressed'); 
+        canvasContainer.style.cursor = 'grab'; 
+    }
+});
+document.addEventListener('keyup', (e) => { 
+    if(e.code === 'Space') { 
+        document.body.classList.remove('space-pressed'); 
+        canvasContainer.style.cursor = 'default'; 
+    }
+});
 
 const resizer = document.getElementById('panel-resizer');
 const shapesPanel = document.getElementById('shapes-panel');
@@ -239,7 +252,6 @@ window.addEventListener('mouseup', (e) => {
     isDragging = false;
 });
 
-// === TOOLS CREATION (Sem Emojis!) ===
 document.getElementById('btn-add-text').addEventListener('click', () => {
     const id = `id-${Date.now()}-${Math.floor(Math.random()*1000)}`;
     const color = document.getElementById('fill-color').value;
@@ -301,16 +313,51 @@ document.getElementById('btn-add-image').addEventListener('change', (e) => {
     reader.readAsDataURL(file); e.target.value = ''; 
 });
 
-// === MOTOR BOOLEANO UNIFICADO (PATHFINDER / PAPER.JS) ===
 document.querySelectorAll('.bool-btn[data-bool]').forEach(btn => {
     btn.addEventListener('click', (e) => {
         const mode = e.currentTarget.getAttribute('data-bool');
         
-        if (window.executeAdvancedBoolean) {
-            // Agora TODOS os botões usam a matemática destrutiva de precisão!
-            window.executeAdvancedBoolean(mode);
-        } else {
-            alert("Engine matemática Paper.js não foi carregada corretamente.");
+        // UNION, SUBTRACT, INTERSECT E EXCLUDE: Organização Não-Destrutiva nas Layers!
+        if (window.selectedElementsIds.length === 0) return;
+
+        if (window.selectedElementsIds.length > 1) {
+            
+            let sortedSelected = [...window.selectedElementsIds].sort((idA, idB) => {
+                return window.LayerTree.findIndex(l => l.id === idA) - window.LayerTree.findIndex(l => l.id === idB);
+            });
+
+            const baseId = sortedSelected[0]; 
+
+            for (let i = 1; i < sortedSelected.length; i++) {
+                const childId = sortedSelected[i];
+                const childIndex = window.LayerTree.findIndex(l => l.id === childId);
+                if(childIndex === -1) continue;
+
+                const childLayer = window.LayerTree[childIndex];
+                childLayer.parentId = null;
+                childLayer.maskForId = baseId;
+                childLayer.boolMode = mode; // Pode ser union, subtract, intersect ou exclude
+
+                window.LayerTree.splice(childIndex, 1);
+                const newBaseIndex = window.LayerTree.findIndex(l => l.id === baseId);
+                window.LayerTree.splice(newBaseIndex + 1, 0, childLayer);
+            }
+            
+            window.Render();
+            window.selectElement(baseId, false); 
+            if(window.saveState) window.saveState();
+            
+        } else if (window.selectedElementsIds.length === 1) {
+            const elId = window.selectedElementsIds[0];
+            const layer = window.LayerTree.find(l => l.id === elId);
+            
+            if (layer && layer.maskForId) {
+                layer.boolMode = mode;
+                window.Render();
+                if(window.saveState) window.saveState();
+            } else { 
+                alert("Selecione múltiplas camadas com Shift para Criar uma booleana. Ou selecione um Sub-Layer para alterar sua regra de corte."); 
+            }
         }
     });
 });

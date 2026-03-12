@@ -67,6 +67,7 @@
                     <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.1); margin: 6px 0;">
                     <div><b>Ctrl + Z</b> Undo</div>
                     <div><b>Ctrl + G</b> Group</div>
+                    <div><b>Ctrl + Shift + G</b> Ungroup</div>
                     <div><b>Ctrl + D</b> Duplicate</div>
                     <div><b>Delete</b> Remove</div>
                 </div>
@@ -93,7 +94,6 @@
                     <button class="bool-btn" data-bool="subtract" title="Subtract"><img src="assets/img/subtract.svg" alt="Subtract"></button>
                     <button class="bool-btn" data-bool="intersect" title="Intersect"><img src="assets/img/intersect.svg" alt="Intersect"></button>
                     <button class="bool-btn" data-bool="exclude" title="Exclude"><img src="assets/img/exclude.svg" alt="Exclude"></button>
-                    <button class="bool-btn" data-bool="flatten" title="Flatten"><img src="assets/img/flatten.svg" alt="Flatten"></button>
                 </div>
             </div>
             
@@ -304,12 +304,11 @@
 
     <input type="file" id="inp-open-project" accept=".viep" style="display:none;">
 
-    <script src="scripts/paper-full.min.js"></script>
-    <script src="scripts/path-math.js"></script>
     <script src="scripts/state.js"></script>
     <script src="scripts/properties.js"></script>
     <script src="scripts/export.js"></script>
     <script src="scripts/shapes.js"></script>
+    <script src="scripts/renderer.js"></script>
     <script src="scripts/layers.js"></script>
     <script src="scripts/shortcuts.js"></script>
     <script src="scripts/gizmos.js"></script>
